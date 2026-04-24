@@ -11,6 +11,7 @@ const sessionToken = ref('')
 const accessToken = ref(localStorage.getItem('watchlist_token') ?? '')
 const currentUser = ref(null)
 const watchlist = ref([])
+const stats = ref(null)
 
 const registerForm = reactive({
   email: '',
@@ -150,13 +151,15 @@ const verifyTwoFactor = async () => {
 }
 
 const loadPrivateData = async () => {
-  const [me, mine] = await Promise.all([
+  const [me, mine, myStats] = await Promise.all([
     api('/auth/me', 'GET', null, true),
     api('/watchlist/me', 'GET', null, true),
+    api('/watchlist/me/stats', 'GET', null, true),
   ])
 
   currentUser.value = me
   watchlist.value = mine
+  stats.value = myStats
 }
 
 const addMovie = async () => {
@@ -175,10 +178,40 @@ const addMovie = async () => {
   }
 }
 
+const toggleWatched = async (movie) => {
+  clearMessages()
+  isLoading.value = true
+
+  try {
+    await api(`/watchlist/me/${movie.id}`, 'PATCH', { watched: !movie.watched }, true)
+    await loadPrivateData()
+  } catch (error) {
+    errorMessage.value = error.message
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const removeMovie = async (movie) => {
+  clearMessages()
+  isLoading.value = true
+
+  try {
+    await api(`/watchlist/me/${movie.id}`, 'DELETE', null, true)
+    await loadPrivateData()
+    infoMessage.value = 'Film supprimé'
+  } catch (error) {
+    errorMessage.value = error.message
+  } finally {
+    isLoading.value = false
+  }
+}
+
 const logout = () => {
   accessToken.value = ''
   currentUser.value = null
   watchlist.value = []
+  stats.value = null
   sessionToken.value = ''
   localStorage.removeItem('watchlist_token')
   clearMessages()
@@ -203,7 +236,7 @@ onMounted(async () => {
       <p class="eyebrow">Mini Letterbox Clone</p>
       <h1>Watchlist pour tes films déja vus</h1>
       <p class="subtitle">
-        Inscription + vérification email + login 2FA par email. Version simple et efficace.
+        Inscription + vérification email + login 2FA par email.
       </p>
     </section>
 
@@ -260,6 +293,25 @@ onMounted(async () => {
         <button class="logout" @click="logout">Déconnexion</button>
       </div>
 
+      <div v-if="stats" class="stats">
+        <div class="stat-box">
+          <span class="stat-label">Total</span>
+          <span class="stat-value">{{ stats.total }}</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Vus</span>
+          <span class="stat-value">{{ stats.watched }}</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">À voir</span>
+          <span class="stat-value">{{ stats.unwatched }}</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Année préférée</span>
+          <span class="stat-value">{{ stats.mostWatchedYear ?? '—' }}</span>
+        </div>
+      </div>
+
       <div class="add-movie">
         <input v-model="movieForm.title" placeholder="Titre du film" />
         <input v-model.number="movieForm.year" type="number" min="1900" max="2100" />
@@ -267,9 +319,25 @@ onMounted(async () => {
       </div>
 
       <ul v-if="watchlist.length > 0" class="movie-list">
-        <li v-for="movie in watchlist" :key="movie.id">
-          <strong>{{ movie.title }}</strong>
-          <span>{{ movie.year }}</span>
+        <li v-for="movie in watchlist" :key="movie.id" :class="{ watched: movie.watched }">
+          <div class="movie-info">
+            <strong>{{ movie.title }}</strong>
+            <span>{{ movie.year }}</span>
+          </div>
+          <div class="movie-actions">
+            <label class="watched-toggle">
+              <input
+                type="checkbox"
+                :checked="movie.watched"
+                :disabled="isLoading"
+                @change="toggleWatched(movie)"
+              />
+              Vu
+            </label>
+            <button class="delete" :disabled="isLoading" @click="removeMovie(movie)">
+              Supprimer
+            </button>
+          </div>
         </li>
       </ul>
       <p v-else class="empty">Pas encore de film dans ta watchlist.</p>

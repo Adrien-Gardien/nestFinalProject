@@ -188,15 +188,90 @@ button:disabled {
 
 .movie-list li {
   display: flex;
+  align-items: center;
   justify-content: space-between;
+  gap: 0.8rem;
   background: rgba(13, 26, 31, 0.88);
   border: 1px solid rgba(145, 172, 170, 0.2);
   border-radius: 10px;
   padding: 0.6rem 0.75rem;
 }
 
+.movie-list li.watched {
+  opacity: 0.65;
+  text-decoration: line-through;
+}
+
+.movie-info {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+}
+
 .movie-list span {
   color: var(--muted);
+}
+
+.movie-actions {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.watched-toggle {
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.delete {
+  background: transparent;
+  border: 1px solid rgba(220, 100, 100, 0.5);
+  color: #e88;
+  padding: 0.3rem 0.7rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.delete:hover:not(:disabled) {
+  background: rgba(220, 100, 100, 0.15);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.stat-box {
+  background: rgba(13, 26, 31, 0.88);
+  border: 1px solid rgba(145, 172, 170, 0.2);
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.stat-label {
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stat-value {
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+@media (max-width: 700px) {
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .empty {
