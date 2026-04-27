@@ -8,9 +8,10 @@ import { UsersModule } from './users/users.module';
 import { MailModule } from './mail/mail.module';
 import { WatchlistModule } from './watchlist/watchlist.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { MoviesModule } from './movies/movies.module';
 
 @Module({
-  imports: [PrismaModule, UsersModule, MailModule, AuthModule, WatchlistModule],
+  imports: [PrismaModule, UsersModule, MailModule, AuthModule, WatchlistModule, MoviesModule],
   controllers: [AppController],
   providers: [
     {

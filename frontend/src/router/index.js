@@ -24,6 +24,11 @@ const router = createRouter({
       component: () => import('../views/WatchlistView.vue'),
       meta: { requiresAuth: true },
     },
+    {
+      path: '/movies',
+      name: 'movies',
+      component: () => import('../views/MoviesView.vue'),
+    },
   ],
 })
 

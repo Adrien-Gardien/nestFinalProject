@@ -44,6 +44,7 @@ services:
       MAIL_PORT: 1025
       MAIL_FROM: no-reply@watchlist.dev
       FRONTEND_ORIGINS: http://localhost:5173,http://localhost:8080
+      TMDB_ACCESS_TOKEN: eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIwMTY4YjEyNjI2ZWZmNGZkYTgwZTc4M2EwNTJjMDA4ZiIsIm5iZiI6MTc3NzI5NjQxMy40NTgsInN1YiI6IjY5ZWY2NDFkNDNmODFjZDAzMTI4ZTNmYiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.lfLaICvPy5UKRwa-UnIAaNHs9XCRY_UjCWGAEAPJKcs
     ports:
       - "3000:3000"
 

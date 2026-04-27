@@ -20,6 +20,7 @@ function handleLogout() {
 
       <div class="nav-links">
         <RouterLink to="/">Accueil</RouterLink>
+        <RouterLink to="/movies">Films</RouterLink>
         <RouterLink v-if="auth.token" to="/watchlist">Ma Watchlist</RouterLink>
       </div>
 
