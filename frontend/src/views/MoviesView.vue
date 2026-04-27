@@ -1,6 +1,15 @@
 <script setup>
 import { onMounted, ref, watch } from 'vue'
+import { RouterLink, useRouter } from 'vue-router'
 import { api } from '../api'
+import { useAuthStore } from '../stores/auth'
+
+const auth = useAuthStore()
+const router = useRouter()
+
+const watchlistMap = ref(new Map())
+const addingId = ref(null)
+const addError = ref('')
 
 // ─── état principal ───────────────────────────────────────────────────────────
 const movies = ref([])
@@ -113,11 +122,49 @@ function ratingClass(score) {
   return 'rating-low'
 }
 
+async function loadWatchlistIds() {
+  if (!auth.token) return
+  const items = await api('/watchlist/me', 'GET', null, auth.token).catch(() => [])
+  const map = new Map()
+  for (const i of items) {
+    if (i.tmdbId) map.set(i.tmdbId, i.id)
+  }
+  watchlistMap.value = map
+}
+
+async function toggleWatchlist(movie) {
+  addError.value = ''
+  if (!auth.token) {
+    router.push('/login')
+    return
+  }
+  addingId.value = movie.id
+  try {
+    if (watchlistMap.value.has(movie.id)) {
+      const itemId = watchlistMap.value.get(movie.id)
+      await api(`/watchlist/me/${itemId}`, 'DELETE', null, auth.token)
+      const next = new Map(watchlistMap.value)
+      next.delete(movie.id)
+      watchlistMap.value = next
+    } else {
+      const created = await api('/watchlist/me', 'POST', { tmdbId: movie.id }, auth.token)
+      const next = new Map(watchlistMap.value)
+      next.set(movie.id, created.id)
+      watchlistMap.value = next
+    }
+  } catch (e) {
+    addError.value = e.message
+  } finally {
+    addingId.value = null
+  }
+}
+
 onMounted(async () => {
-  // on charge genres + films en parallèle
+  // on charge genres + films + watchlist en parallèle
   const [genreData] = await Promise.all([
     api('/movies/genres').catch(() => []),
     load(),
+    loadWatchlistIds(),
   ])
   genres.value = genreData
 })
@@ -175,6 +222,7 @@ onMounted(async () => {
 
     <!-- Message d'erreur -->
     <p v-if="error" class="message message-error">{{ error }}</p>
+    <p v-if="addError" class="message message-error">{{ addError }}</p>
 
     <!-- Loading skeleton -->
     <div v-if="isLoading" class="movie-grid">
@@ -183,7 +231,12 @@ onMounted(async () => {
 
     <!-- Grille de films -->
     <div v-else-if="movies.length > 0" class="movie-grid">
-      <article v-for="movie in movies" :key="movie.id" class="movie-card">
+      <RouterLink
+        v-for="movie in movies"
+        :key="movie.id"
+        :to="{ name: 'movie-detail', params: { id: movie.id } }"
+        class="movie-card"
+      >
         <div class="poster-wrap">
           <img
             v-if="posterUrl(movie.poster_path)"
@@ -198,12 +251,28 @@ onMounted(async () => {
           <span :class="['rating-badge', ratingClass(movie.vote_average)]">
             ★ {{ rating(movie.vote_average) }}
           </span>
+
+          <div class="card-overlay">
+            <button
+              class="overlay-btn"
+              :class="{ 'overlay-btn-active': watchlistMap.has(movie.id) }"
+              :title="watchlistMap.has(movie.id) ? 'Retirer de ma watchlist' : 'Ajouter à ma watchlist'"
+              :disabled="addingId === movie.id"
+              @click.prevent="toggleWatchlist(movie)"
+            >
+              <template v-if="watchlistMap.has(movie.id)">
+                <span class="icon-default">✓</span>
+                <span class="icon-hover">✕</span>
+              </template>
+              <span v-else>+</span>
+            </button>
+          </div>
         </div>
         <div class="card-info">
           <p class="card-title">{{ movie.title }}</p>
           <p class="card-year">{{ year(movie.release_date) }}</p>
         </div>
-      </article>
+      </RouterLink>
     </div>
 
     <p v-else class="empty">Aucun film trouvé.</p>
@@ -345,8 +414,11 @@ onMounted(async () => {
 }
 
 .movie-card {
-  cursor: default;
+  cursor: pointer;
   transition: transform 0.15s;
+  text-decoration: none;
+  color: inherit;
+  display: block;
 }
 
 .movie-card:hover {
@@ -384,7 +456,7 @@ onMounted(async () => {
 
 .rating-badge {
   position: absolute;
-  bottom: 0.4rem;
+  top: 0.4rem;
   right: 0.4rem;
   padding: 0.15rem 0.4rem;
   border-radius: 6px;
@@ -406,6 +478,76 @@ onMounted(async () => {
 .rating-low {
   background: rgba(255, 111, 111, 0.75);
   color: #300;
+}
+
+/* Overlay action (ajout watchlist) */
+.card-overlay {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  padding: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.poster-wrap:hover .card-overlay,
+.poster-wrap:focus-within .card-overlay {
+  opacity: 1;
+}
+
+.overlay-btn {
+  background: rgba(13, 26, 31, 0.92);
+  border: 1px solid rgba(145, 172, 170, 0.4);
+  color: var(--text);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: 1.05rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-weight: 700;
+  line-height: 1;
+  transition: all 0.15s;
+}
+
+.overlay-btn:hover:not(:disabled) {
+  background: var(--green);
+  color: #04220f;
+  border-color: var(--green);
+}
+
+.overlay-btn-active {
+  background: var(--green);
+  color: #04220f;
+  border-color: var(--green);
+}
+
+.overlay-btn-active:hover:not(:disabled) {
+  background: rgba(220, 100, 100, 0.92);
+  border-color: rgba(220, 100, 100, 0.92);
+  color: #fff;
+}
+
+.overlay-btn .icon-hover {
+  display: none;
+}
+
+.overlay-btn-active:hover:not(:disabled) .icon-default {
+  display: none;
+}
+
+.overlay-btn-active:hover:not(:disabled) .icon-hover {
+  display: inline;
+}
+
+.overlay-btn:disabled {
+  cursor: default;
+  opacity: 0.6;
 }
 
 .card-info {
@@ -491,6 +633,11 @@ onMounted(async () => {
   .movie-grid {
     grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
     gap: 0.75rem;
+  }
+
+  /* Sur mobile l'overlay reste visible */
+  .card-overlay {
+    opacity: 1;
   }
 }
 </style>

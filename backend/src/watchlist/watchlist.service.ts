@@ -1,4 +1,11 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { MoviesService } from '../movies/movies.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateWatchlistItemDto } from './dto/create-watchlist-item.dto';
 import { UpdateWatchlistItemDto } from './dto/update-watchlist-item.dto';
@@ -7,7 +14,10 @@ import { WatchlistStatsEntity } from './entities/watchlist-stats.entity';
 
 @Injectable()
 export class WatchlistService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly moviesService: MoviesService,
+  ) {}
 
   getForUser(userId: string): Promise<WatchlistItemEntity[]> {
     return this.prismaService.watchlistItem.findMany({
@@ -18,18 +28,33 @@ export class WatchlistService {
     });
   }
 
-  addForUser(
+  async addForUser(
     userId: string,
     dto: CreateWatchlistItemDto,
   ): Promise<WatchlistItemEntity> {
-    // Adrien : ici on ajoute dans postgres, ca survive au restart.
-    return this.prismaService.watchlistItem.create({
-      data: {
-        userId,
-        title: dto.title,
-        year: dto.year,
-      },
-    });
+    const movie = await this.moviesService.getById(dto.tmdbId);
+    const year = movie.release_date ? Number(movie.release_date.slice(0, 4)) : 0;
+
+    try {
+      return await this.prismaService.watchlistItem.create({
+        data: {
+          userId,
+          tmdbId: movie.id,
+          title: movie.title,
+          year,
+          posterPath: movie.poster_path,
+          overview: movie.overview,
+        },
+      });
+    } catch (e) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2002'
+      ) {
+        throw new ConflictException('Ce film est déjà dans ta watchlist');
+      }
+      throw e;
+    }
   }
 
   async updateForUser(
