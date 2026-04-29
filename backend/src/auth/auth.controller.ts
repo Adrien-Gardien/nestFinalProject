@@ -1,5 +1,18 @@
+<<<<<<< Updated upstream
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+=======
+import { Body, Controller, Get, Post, UseInterceptors } from '@nestjs/common';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
+>>>>>>> Stashed changes
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import type { AuthUser } from '../common/interfaces/auth-user.interface';
@@ -9,6 +22,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { VerifyTwoFactorDto } from './dto/verify-2fa.dto';
+import { LoginLoggingInterceptor } from './interceptors/login-logging.interceptor';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -21,6 +35,13 @@ export class AuthController {
   @Public()
   @Post('register')
   @ApiOperation({ summary: 'Créer un compte + envoi code de validation email' })
+<<<<<<< Updated upstream
+=======
+  @ApiCreatedResponse({ type: RegisterResponseDto })
+  @ApiBadRequestResponse({
+    description: 'Email déjà utilisé ou données invalides',
+  })
+>>>>>>> Stashed changes
   register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
   }
@@ -28,13 +49,30 @@ export class AuthController {
   @Public()
   @Post('verify-email')
   @ApiOperation({ summary: 'Valider le compte avec le code reçu par email' })
+<<<<<<< Updated upstream
+=======
+  @ApiOkResponse({ type: VerifyEmailResponseDto })
+  @ApiBadRequestResponse({
+    description: 'Utilisateur introuvable ou code invalide',
+  })
+>>>>>>> Stashed changes
   verifyEmail(@Body() verifyEmailDto: VerifyEmailDto) {
     return this.authService.verifyEmail(verifyEmailDto);
   }
 
   @Public()
   @Post('login')
+  @UseInterceptors(LoginLoggingInterceptor)
   @ApiOperation({ summary: 'Login étape 1 (email + mot de passe)' })
+<<<<<<< Updated upstream
+=======
+  @ApiOkResponse({
+    type: LoginResponseDto,
+    description: "Retourne un sessionToken pour l'étape 2FA",
+  })
+  @ApiUnauthorizedResponse({ description: 'Email ou mot de passe invalide' })
+  @ApiBadRequestResponse({ description: 'Email non vérifié' })
+>>>>>>> Stashed changes
   login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
@@ -42,6 +80,16 @@ export class AuthController {
   @Public()
   @Post('verify-2fa')
   @ApiOperation({ summary: 'Login étape 2 (code 2FA email + sessionToken)' })
+<<<<<<< Updated upstream
+=======
+  @ApiOkResponse({
+    type: VerifyTwoFactorResponseDto,
+    description: "Retourne le JWT d'accès",
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Code 2FA invalide, expiré ou session invalide',
+  })
+>>>>>>> Stashed changes
   verifyTwoFactor(@Body() verifyTwoFactorDto: VerifyTwoFactorDto) {
     return this.authService.verifyTwoFactor(verifyTwoFactorDto);
   }
