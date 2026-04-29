@@ -37,7 +37,6 @@ export class AuthService {
       emailVerificationCode: emailCode,
     });
 
-    // Adrien : ça sert en gros à envoyer le code sur SMTP, visible dans Mailpit.
     await this.mailService.sendEmailVerificationCode(user.email, emailCode);
 
     return {
@@ -85,7 +84,6 @@ export class AuthService {
     const sessionToken = randomBytes(24).toString('hex');
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-    // Adrien : on garde un token temporaire pour eviter de redonner le mdp.
     await this.usersService.saveTwoFactorCode(
       user.email,
       twoFactorCode,

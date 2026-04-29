@@ -2,8 +2,6 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsInt, IsOptional, IsString, Min } from 'class-validator';
 
-// Adrien : DTO pour les query params de GET /movies
-// q → recherche texte, sort → tri discover, genre → filtre par genre TMDb, page → pagination
 export class SearchMoviesDto {
   @ApiPropertyOptional({ example: 'Dune', description: 'Recherche par titre' })
   @IsOptional()
